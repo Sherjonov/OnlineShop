@@ -1,3 +1,421 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QUVVAT Market</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --card: #111;
+      --text: #fff;
+      --sub: #cfcfcf;
+      --border: #2a2a2a;
+      --accent: #fff;
+    }
+    [data-theme="light"] {
+      --bg: #fff;
+      --card: #f4f4f4;
+      --text: #000;
+      --sub: #333;
+      --border: #d8d8d8;
+      --accent: #000;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: Arial, sans-serif;
+      background: var(--bg); color: var(--text);
+    }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 16px; }
+    .top {
+      display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+      border: 1px solid var(--border); background: var(--card); border-radius: 12px; padding: 10px;
+    }
+    input, select, button {
+      background: transparent; color: var(--text); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px;
+    }
+    button { cursor: pointer; }
+    .grow { flex: 1; min-width: 180px; }
+    .grid {
+      margin-top: 14px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;
+    }
+    .card {
+      border: 1px solid var(--border); border-radius: 12px; background: var(--card); padding: 12px;
+      display: grid; gap: 8px;
+    }
+    .emoji { font-size: 28px; }
+    .name { font-weight: 700; }
+    .sub { color: var(--sub); font-size: 13px; }
+    .qtybox { display: flex; align-items: center; gap: 6px; }
+    .qty { width: 56px; text-align: center; }
+    .tag { font-size: 12px; border: 1px solid var(--border); border-radius: 999px; padding: 3px 8px; display: inline-block; }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .panel {
+      margin-top: 14px; border: 1px solid var(--border); background: var(--card); border-radius: 12px; padding: 12px;
+    }
+    .modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,.65); display: none; align-items: center; justify-content: center; padding: 12px;
+    }
+    .box {
+      width: min(680px, 100%); max-height: 92vh; overflow: auto;
+      border: 1px solid var(--border); border-radius: 12px; background: var(--bg); padding: 14px;
+    }
+    .list { display: grid; gap: 8px; }
+    .item {
+      display: grid; grid-template-columns: 1fr auto auto; gap: 8px;
+      border: 1px solid var(--border); border-radius: 8px; padding: 8px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border: 1px solid var(--border); padding: 8px; text-align: left; }
+    @media (max-width: 1000px) { .grid { grid-template-columns: repeat(3, minmax(0,1fr)); } }
+    @media (max-width: 760px) { .grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+    @media (max-width: 520px) { .grid { grid-template-columns: 1fr; } .item { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body data-theme="dark">
+  <div class="wrap">
+    <div class="top">
+      <strong id="brand">QUVVAT Market</strong>
+      <select id="lang">
+        <option value="uz">UZ</option>
+        <option value="en">EN</option>
+        <option value="ru">RU</option>
+      </select>
+      <button id="themeBtn">Dark/Light</button>
+      <input id="search" class="grow" placeholder="Qidirish">
+      <select id="cat">
+        <option value="all">Barchasi</option>
+        <option value="fastfood">FastFood</option>
+        <option value="drinks">Ichimliklar</option>
+        <option value="milliy">Milliy</option>
+        <option value="sweets">Shirinliklar</option>
+      </select>
+      <button id="loginBtn">Kirish</button>
+      <button id="ordersBtn">Buyurtmalar</button>
+      <button id="activityBtn">Kirish-chiqish</button>
+      <button id="favsBtn">Yoqtirganlarim</button>
+      <button id="fillBtn">Limitni to'ldirish</button>
+      <button id="cartBtn">Savat (0)</button>
+    </div>
+
+    <div class="panel sub" id="hint">Har mahsulotda limit: 1..15</div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <div class="modal" id="authModal"><div class="box">
+    <h3 id="authTitle">Kirish / Ro'yxatdan o'tish</h3>
+    <div class="row">
+      <input id="lgUser" placeholder="Username" class="grow">
+      <input id="lgPass" placeholder="Parol" type="password" class="grow">
+      <button onclick="doLogin()">Kirish</button>
+    </div>
+    <hr>
+    <div class="row">
+      <input id="rgName" placeholder="Ism" class="grow">
+      <input id="rgSurname" placeholder="Familiya" class="grow">
+      <input id="rgUsername" placeholder="Username" class="grow">
+      <input id="rgEmail" placeholder="Email" class="grow">
+      <input id="rgPass" placeholder="Parol" type="password" class="grow">
+      <button onclick="doRegister()">Ro'yxatdan o'tish</button>
+    </div>
+    <div class="row" id="otpRow" style="display:none;margin-top:8px">
+      <input id="otpInput" placeholder="OTP kodi">
+      <button onclick="verifyOtp()">Tasdiqlash</button>
+      <small id="otpSign" class="sub"></small>
+    </div>
+    <div class="row"><button onclick="closeModal('authModal')">Yopish</button></div>
+  </div></div>
+
+  <div class="modal" id="cartModal"><div class="box">
+    <h3 id="cartTitle">Savat</h3>
+    <div class="list" id="cartList"></div>
+    <div class="row"><strong id="totalText">Jami: 0</strong></div>
+    <div class="row">
+      <button onclick="prepareCheckout()">Tasdiqlash</button>
+      <button onclick="closeModal('cartModal')">Yopish</button>
+    </div>
+  </div></div>
+
+  <div class="modal" id="verifyModal"><div class="box">
+    <h3 id="verifyTitle">Shaxs va to'lov tasdiqlash</h3>
+    <div class="row"><input id="oName" placeholder="Ism" class="grow"><input id="oSurname" placeholder="Familiya" class="grow"></div>
+    <div class="row"><input id="oEmail" placeholder="Email" class="grow"><input id="oPhone" placeholder="Telefon" class="grow"></div>
+    <div class="row"><input id="oRegion" placeholder="Hudud" class="grow"><input id="oAddr" placeholder="Manzil" class="grow"></div>
+    <hr>
+    <div class="row"><input id="cardNumber" placeholder="Karta 16 raqam" class="grow"><input id="cardExpiry" placeholder="MM/YY"><input id="cardHolder" placeholder="Karta egasi" class="grow"></div>
+    <div class="sub" id="cardResult">Karta hali tekshirilmagan</div>
+    <div class="row"><button onclick="checkCard()">Kartani tekshir</button></div>
+    <hr>
+    <div class="row"><input id="ppSerial" placeholder="AA"><input id="ppNumber" placeholder="1234567"><input id="ppPinfl" placeholder="PINFL 14 raqam" class="grow"></div>
+    <div class="sub" id="passportResult">Pasport hali tekshirilmagan</div>
+    <div class="row"><button onclick="checkPassport()">Pasportni tekshir</button></div>
+    <hr>
+    <div class="row"><button onclick="submitOrder()">Yakuniy buyurtma</button><button onclick="closeModal('verifyModal')">Yopish</button></div>
+  </div></div>
+
+  <div class="modal" id="ordersModal"><div class="box">
+    <h3 id="ordersTitle">Buyurtmalar tarixi</h3>
+    <table id="ordersTable"><thead><tr><th>#</th><th>Mijoz</th><th>Summa</th><th>Status</th><th>Vaqt</th></tr></thead><tbody></tbody></table>
+    <div class="row"><button onclick="closeModal('ordersModal')">Yopish</button></div>
+  </div></div>
+
+  <div class="modal" id="activityModal"><div class="box">
+    <h3 id="activityTitle">Kirish-chiqish jadvali</h3>
+    <table id="activityTable"><thead><tr><th>FIO</th><th>Email</th><th>Username</th><th>Amal</th><th>Vaqt</th></tr></thead><tbody></tbody></table>
+    <div class="row"><button onclick="closeModal('activityModal')">Yopish</button></div>
+  </div></div>
+
+  <script>
+    const API = "http://127.0.0.1:5000/api";
+    let products = [];
+    let cart = JSON.parse(localStorage.getItem("qm_cart") || "[]");
+    let favorites = [];
+    let token = localStorage.getItem("qm_token") || "";
+    let currentUser = JSON.parse(localStorage.getItem("qm_user") || "null");
+    let pendingEmail = "";
+    let cardOk = false;
+    let passportOk = false;
+
+    const i18n = {
+      uz: { login:"Kirish", cart:"Savat", orders:"Buyurtmalar", favs:"Yoqtirganlarim", fill:"Limitni to'ldirish", qty:"Miqdor", added:"Savatga qo'shildi", soldOut:"Tugadi", auth:"Kirish / Ro'yxatdan o'tish", confirm:"Tasdiqlash", onlyExact:"Faqat aniq mos mahsulotlar ko'rsatiladi" },
+      en: { login:"Login", cart:"Cart", orders:"Orders", favs:"Favorites", fill:"Fill limits", qty:"Qty", added:"Added to cart", soldOut:"Sold out", auth:"Login / Register", confirm:"Confirm", onlyExact:"Only exact product matches are shown" },
+      ru: { login:"Вход", cart:"Корзина", orders:"Заказы", favs:"Избранное", fill:"Заполнить лимиты", qty:"Кол-во", added:"Добавлено в корзину", soldOut:"Нет в наличии", auth:"Вход / Регистрация", confirm:"Подтверждение", onlyExact:"Показываются только точные совпадения" }
+    };
+
+    function t(key){ return i18n[lang.value][key] || key; }
+    function closeModal(id){ document.getElementById(id).style.display = "none"; }
+    function openModal(id){ document.getElementById(id).style.display = "flex"; }
+    function authHeader(){ return token ? { Authorization: "Bearer " + token } : {}; }
+
+    async function api(path, method="GET", body=null){
+      const opt = { method, headers: { "Content-Type":"application/json", ...authHeader() } };
+      if(body) opt.body = JSON.stringify(body);
+      const r = await fetch(API + path, opt);
+      const d = await r.json();
+      if(!r.ok) throw new Error(d.error || "Xatolik");
+      return d;
+    }
+
+    function applyLang(){
+      loginBtn.textContent = t("login");
+      cartBtn.textContent = `${t("cart")} (${cart.length})`;
+      ordersBtn.textContent = t("orders");
+      favsBtn.textContent = t("favs");
+      fillBtn.textContent = t("fill");
+      authTitle.textContent = t("auth");
+      hint.textContent = t("onlyExact");
+    }
+
+    function saveCart(){ localStorage.setItem("qm_cart", JSON.stringify(cart)); cartBtn.textContent = `${t("cart")} (${cart.length})`; }
+    function getQty(productId){ return (cart.find(x => x.id === productId) || {}).qty || 0; }
+
+    function setQty(product, qty){
+      qty = Math.max(1, Math.min(15, qty));
+      let row = cart.find(x => x.id === product.id);
+      if(!row){ row = { id: product.id, name: product.name, price: product.price, emoji: product.emoji, qty: 1 }; cart.push(row); }
+      row.qty = qty;
+      saveCart();
+      renderCart();
+      renderProducts();
+    }
+
+    function addToCart(product){
+      let q = getQty(product.id);
+      if(q >= 15){ alert(t("soldOut")); return; }
+      setQty(product, q + 1);
+    }
+
+    function minus(product){
+      let q = getQty(product.id);
+      if(q <= 1){ setQty(product, 1); return; }
+      setQty(product, q - 1);
+    }
+
+    function renderProducts(){
+      const q = search.value.trim().toLowerCase();
+      const c = cat.value;
+      let list = products;
+      if(c !== "all") list = list.filter(p => p.cat === c);
+      if(q) list = list.filter(p => p.name.toLowerCase() === q);
+      grid.innerHTML = list.map(p => {
+        const qty = getQty(p.id);
+        const sold = qty >= 15;
+        const liked = favorites.includes(p.id);
+        return `<div class="card">
+          <div class="row"><span class="tag">1..15</span><button onclick="toggleFav(${p.id})">${liked ? "♥" : "♡"}</button></div>
+          <div class="emoji">${p.emoji}</div>
+          <div class="name">${p.name}</div>
+          <div class="sub">${p.desc}</div>
+          <div><strong>${p.price.toLocaleString()} so'm</strong></div>
+          <div class="qtybox">
+            <button onclick="minus(findProduct(${p.id}))">-</button>
+            <input class="qty" readonly value="${qty || 1}">
+            <button onclick="addToCart(findProduct(${p.id}))">+</button>
+            <button onclick="addToCart(findProduct(${p.id}))" ${sold ? "disabled" : ""}>${sold ? t("soldOut") : t("added")}</button>
+          </div>
+        </div>`;
+      }).join("");
+    }
+
+    function renderCart(){
+      const total = cart.reduce((s,x)=>s+x.price*x.qty,0);
+      totalText.textContent = `Jami: ${total.toLocaleString()} so'm`;
+      cartList.innerHTML = cart.map(x => `<div class="item">
+        <div>${x.emoji} ${x.name}</div>
+        <div>${x.qty} x</div>
+        <div>${(x.price*x.qty).toLocaleString()} so'm</div>
+      </div>`).join("");
+    }
+
+    function findProduct(id){ return products.find(p => p.id === id); }
+
+    async function doLogin(){
+      try{
+        const data = await api("/auth/login", "POST", { username: lgUser.value, password: lgPass.value });
+        token = data.token;
+        currentUser = data.user;
+        localStorage.setItem("qm_token", token);
+        localStorage.setItem("qm_user", JSON.stringify(currentUser));
+        closeModal("authModal");
+        await loadFavorites();
+        alert("OK");
+      }catch(e){ alert(e.message); }
+    }
+
+    async function doRegister(){
+      try{
+        const data = await api("/auth/register","POST",{ name: rgName.value, surname: rgSurname.value, username: rgUsername.value, email: rgEmail.value, password: rgPass.value });
+        pendingEmail = rgEmail.value.trim().toLowerCase();
+        otpRow.style.display = "flex";
+        otpInput.value = data.dev_otp || "";
+        otpSign.textContent = "Imzo: " + (data.signature || "");
+      }catch(e){ alert(e.message); }
+    }
+
+    async function verifyOtp(){
+      try{
+        const data = await api("/auth/verify-otp","POST",{ email: pendingEmail, code: otpInput.value });
+        token = data.token; currentUser = data.user;
+        localStorage.setItem("qm_token", token);
+        localStorage.setItem("qm_user", JSON.stringify(currentUser));
+        closeModal("authModal");
+        await loadFavorites();
+      }catch(e){ alert(e.message); }
+    }
+
+    async function toggleFav(id){
+      if(!token){ openModal("authModal"); return; }
+      const data = await api("/favorites/toggle","POST",{ product_id:id });
+      favorites = data.ids || [];
+      renderProducts();
+    }
+
+    async function loadFavorites(){
+      if(!token){ favorites = []; return; }
+      const data = await api("/favorites");
+      favorites = data.ids || [];
+      renderProducts();
+    }
+
+    function fillLimits(){
+      if(!confirm("Barcha savatdagi mahsulotlar 15 taga to'ldirilsinmi?")) return;
+      cart = cart.map(x => ({...x, qty:15}));
+      saveCart(); renderCart(); renderProducts();
+      alert("Limitlar to'ldirildi.");
+    }
+
+    function prepareCheckout(){
+      if(!token){ openModal("authModal"); return; }
+      if(!cart.length){ alert("Savat bo'sh"); return; }
+      if(!confirm("Buyurtmani tasdiqlaysizmi?")) return;
+      openModal("verifyModal");
+    }
+
+    async function checkCard(){
+      try{
+        const data = await api("/verify/card","POST",{ card_number: cardNumber.value, expiry: cardExpiry.value, holder: cardHolder.value });
+        cardOk = !!data.valid;
+        cardResult.textContent = `Karta: ${data.brand} | ${data.valid ? "Tasdiqlandi" : "Tasdiqlanmadi"} | ${data.source}`;
+      }catch(e){ cardOk = false; cardResult.textContent = e.message; }
+    }
+
+    async function checkPassport(){
+      try{
+        const data = await api("/verify/passport","POST",{ serial: ppSerial.value.toUpperCase(), number: ppNumber.value, pinfl: ppPinfl.value });
+        passportOk = !!data.valid;
+        passportResult.textContent = `${data.valid ? "Pasport tasdiqlandi" : "Pasport tasdiqlanmadi"} | ${data.source}`;
+      }catch(e){ passportOk = false; passportResult.textContent = e.message; }
+    }
+
+    async function submitOrder(){
+      if(!cardOk || !passportOk){ alert("Avval karta va pasportni tekshiring"); return; }
+      const payload = {
+        name: oName.value, surname: oSurname.value, email: oEmail.value, phone: oPhone.value,
+        address: { region:oRegion.value, line:oAddr.value },
+        payment: { card: cardNumber.value },
+        passport: { serial: ppSerial.value, number: ppNumber.value, pinfl: ppPinfl.value },
+        items: cart,
+        total: cart.reduce((s,x)=>s+x.price*x.qty,0)
+      };
+      try{
+        const data = await api("/orders","POST",payload);
+        alert(`Tasdiqlandi! #${data.order_number}`);
+        cart = []; saveCart(); renderCart(); renderProducts();
+        closeModal("verifyModal"); closeModal("cartModal");
+      }catch(e){ alert(e.message); }
+    }
+
+    async function showOrders(){
+      try{
+        const rows = await api("/orders");
+        ordersTable.querySelector("tbody").innerHTML = rows.map(x => `<tr>
+          <td>${x.number}</td><td>${x.customer.name} ${x.customer.surname}</td><td>${(x.total||0).toLocaleString()}</td><td>${x.status}</td><td>${x.created_at}</td>
+        </tr>`).join("");
+        openModal("ordersModal");
+      }catch(e){ alert(e.message); }
+    }
+
+    async function showActivity(){
+      try{
+        const rows = await api("/activity");
+        activityTable.querySelector("tbody").innerHTML = rows.map(x => `<tr>
+          <td>${x.full_name}</td><td>${x.email}</td><td>${x.username}</td><td>${x.action}</td><td>${x.time}</td>
+        </tr>`).join("");
+        openModal("activityModal");
+      }catch(e){ alert(e.message); }
+    }
+
+    async function loadProducts(){
+      const q = search.value.trim();
+      const c = cat.value;
+      const query = new URLSearchParams();
+      if(q) query.set("q", q);
+      if(c && c !== "all") query.set("category", c);
+      const res = await api("/products?" + query.toString());
+      products = res;
+      renderProducts();
+    }
+
+    const lang = document.getElementById("lang");
+    lang.onchange = applyLang;
+    themeBtn.onclick = () => document.body.dataset.theme = document.body.dataset.theme === "dark" ? "light" : "dark";
+    loginBtn.onclick = () => openModal("authModal");
+    cartBtn.onclick = () => { renderCart(); openModal("cartModal"); };
+    ordersBtn.onclick = showOrders;
+    activityBtn.onclick = showActivity;
+    favsBtn.onclick = () => { const ids = new Set(favorites); products = products.filter(p => ids.has(p.id)); renderProducts(); };
+    fillBtn.onclick = fillLimits;
+    search.oninput = loadProducts;
+    cat.onchange = loadProducts;
+
+    applyLang();
+    loadProducts();
+    loadFavorites();
+    renderCart();
+  </script>
+</body>
+</html>
 <!DOCTYPE html>
 <html lang="uz" data-theme="dark">
 
@@ -3287,6 +3705,47 @@
             .ombox {
                 max-width: 100%
             }
+        }
+    </style>
+    <style>
+        /* Monochrome professional override */
+        :root,
+        [data-theme="light"] {
+            --bg: #050505;
+            --bg1: #0d0d0d;
+            --bg2: #141414;
+            --bg3: #1d1d1d;
+            --bgc: #121212;
+            --bgh: #1f1f1f;
+            --red: #ffffff;
+            --rdim: rgba(255, 255, 255, .12);
+            --orange: #dddddd;
+            --odim: rgba(255, 255, 255, .08);
+            --cyan: #f2f2f2;
+            --cdim: rgba(255, 255, 255, .1);
+            --green: #ffffff;
+            --gdim: rgba(255, 255, 255, .08);
+            --yellow: #e8e8e8;
+            --purple: #cccccc;
+            --t1: #ffffff;
+            --t2: #d0d0d0;
+            --t3: #9a9a9a;
+            --b: rgba(255, 255, 255, .07);
+            --bs: rgba(255, 255, 255, .16);
+            --gr: 0 0 30px rgba(255, 255, 255, .18);
+            --gc: 0 0 30px rgba(255, 255, 255, .12);
+            --hdr-bg: rgba(5, 5, 5, .95);
+            --shadow: 0 14px 40px rgba(0, 0, 0, .6);
+        }
+
+        .orb {
+            display: none;
+        }
+
+        .il em {
+            background: none !important;
+            -webkit-text-fill-color: #ffffff !important;
+            color: #ffffff !important;
         }
     </style>
 </head>
