@@ -111,6 +111,7 @@ function showPanel(name) {
 
 // === Products ===
 let PRODUCTS = window.__PRODUCTS__ || [];
+let LIKED_IDS = new Set(window.__LIKED_IDS__ || []);
 let currentTab = 'fastfood';
 
 function categoryMeta(cat) {
@@ -119,6 +120,7 @@ function categoryMeta(cat) {
     drinks: { ico: '🥤', tit: 'Ichimliklar', sub: 'Salqin va sifatli ichimliklar' },
     milliy: { ico: '🍲', tit: 'Milliy taomlar', sub: "O'zbek milliy taomlari" },
     shirinliklar: { ico: '🍰', tit: 'Shirinliklar', sub: 'Mazali shirinliklar' },
+    favorites: { ico: '❤️', tit: 'Yoqtirganlarim', sub: "Siz yoqtirgan mahsulotlar" },
     all: { ico: '⚡', tit: 'Barcha mahsulotlar', sub: 'Hammasi bir joyda' }
   };
   return map[cat] || map.all;
@@ -127,7 +129,11 @@ function categoryMeta(cat) {
 function renderProducts() {
   const grid = document.getElementById('pgrid');
   if (!grid) return;
-  const list = currentTab === 'all' ? PRODUCTS : PRODUCTS.filter(p => p.category === currentTab);
+  const list = currentTab === 'all'
+    ? PRODUCTS
+    : currentTab === 'favorites'
+      ? PRODUCTS.filter(p => LIKED_IDS.has(p.id))
+      : PRODUCTS.filter(p => p.category === currentTab);
   grid.innerHTML = list.map(p => `
     <div class="pcard" data-id="${p.id}">
       ${p.badge ? `<span class="pbadge ${p.badge}">${p.badge.toUpperCase()}</span>` : ''}
@@ -138,7 +144,10 @@ function renderProducts() {
         <div class="ppr">${formatPrice(p.price)} so'm</div>
         <button class="padd" onclick="addToCart(${p.id})"><i class="fas fa-plus"></i> Qo'shish</button>
       </div>
-      <div class="plimit">📦 Mavjud: ${p.stock || 15}</div>
+      <div class="prow" style="margin-top:8px">
+        <div class="plimit">📦 ${Math.min((CART.find(i => i.id === p.id)?.qty || 1), 15)} / 15</div>
+        <button class="padd" onclick="toggleFavorite(${p.id})">${LIKED_IDS.has(p.id) ? '❤️' : '🤍'}</button>
+      </div>
     </div>
   `).join('') || `<div class="cart-empty"><div class="em">📦</div>Mahsulotlar topilmadi</div>`;
 
@@ -154,18 +163,35 @@ function renderProducts() {
 }
 
 function updateCounts() {
-  const counts = { fastfood: 0, drinks: 0, milliy: 0, shirinliklar: 0, all: PRODUCTS.length };
+  const counts = { fastfood: 0, drinks: 0, milliy: 0, shirinliklar: 0, favorites: LIKED_IDS.size, all: PRODUCTS.length };
   PRODUCTS.forEach(p => { if (counts[p.category] !== undefined) counts[p.category]++; });
-  const ids = { fastfood: 'c-ff', drinks: 'c-dr', milliy: 'c-mi', shirinliklar: 'c-sh', all: 'c-al' };
+  const ids = { fastfood: 'c-ff', drinks: 'c-dr', milliy: 'c-mi', shirinliklar: 'c-sh', favorites: 'c-fv', all: 'c-al' };
   Object.keys(ids).forEach(k => { const el = document.getElementById(ids[k]); if (el) el.textContent = counts[k]; });
 }
 
 function switchTab(tab, evt) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  const tabIds = { fastfood: 't-ff', drinks: 't-dr', milliy: 't-mi', shirinliklar: 't-sh', all: 't-al' };
+  const tabIds = { fastfood: 't-ff', drinks: 't-dr', milliy: 't-mi', shirinliklar: 't-sh', favorites: 't-fv', all: 't-al' };
   const el = document.getElementById(tabIds[tab]); if (el) el.classList.add('active');
   renderProducts();
+}
+
+async function toggleFavorite(productId) {
+  const isAuthed = !!document.getElementById('userArea');
+  if (!isAuthed) {
+    showToast('🔐', "Yoqtirish uchun avval kiring");
+    return openAuth();
+  }
+  const r = await api(`/products/api/favorites/${productId}/toggle/`, { method: 'POST' });
+  if (!(r.ok && r.data.ok)) {
+    showToast('❌', 'Yoqtirganlar yangilanmadi');
+    return;
+  }
+  if (r.data.liked) LIKED_IDS.add(productId);
+  else LIKED_IDS.delete(productId);
+  renderProducts();
+  showToast('❤️', r.data.liked ? "Yoqtirganlarga qo'shildi" : "Yoqtirganlardan olindi");
 }
 
 function renderFeatured() {
@@ -373,14 +399,18 @@ async function doLogin() {
 
 async function doRegister() {
   const data = {
-    first_name: document.getElementById('rn')?.value.trim(),
-    last_name: document.getElementById('rs')?.value.trim(),
+    first_name: document.getElementById('rn')?.value.trim() || 'Sherjonov',
+    last_name: document.getElementById('rs')?.value.trim() || 'Abduaziz',
     username: document.getElementById('ru')?.value.trim(),
     email: document.getElementById('re')?.value.trim(),
+    phone: (document.getElementById('rph')?.value || '').replace(/\D/g, ''),
     password: document.getElementById('rp')?.value,
   };
   if (!data.first_name || !data.username || !data.email || !data.password) {
     return showToast('⚠️', "Barcha maydonlarni to'ldiring");
+  }
+  if (data.phone && !/^\d{7,15}$/.test(data.phone)) {
+    return showToast('⚠️', "Telefon faqat raqamlardan iborat bo'lsin");
   }
   const r = await api('/accounts/api/register/', { method: 'POST', body: JSON.stringify(data) });
   if (r.ok && r.data.ok) {
@@ -391,7 +421,7 @@ async function doRegister() {
     if (r.data.code) {
       autoFillOtp('regOtpWrap', r.data.code);
     }
-    showToast('📬', 'Kod emailga yuborildi (Sherjonov Abduaziz)');
+    showToast('📬', 'Kod emailga yuborildi va avtoto`ldirildi');
   } else {
     showToast('❌', r.data.error || "Ro'yxatdan o'tish xatosi");
   }
@@ -576,8 +606,18 @@ function closeOrder() { document.getElementById('orderModal')?.classList.remove(
 
 function fmtCard(el) {
   el.value = el.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim().slice(0, 19);
+  const raw = el.value.replace(/\s/g, '');
   const cvNum = document.getElementById('cvNum');
   if (cvNum) cvNum.textContent = el.value || '•••• •••• •••• ••••';
+  const cardTypeInfo = document.getElementById('cardTypeInfo');
+  if (cardTypeInfo) {
+    let type = 'Aniqlanmadi';
+    if (raw.startsWith('4700') || raw.startsWith('4')) type = 'Visa';
+    else if (raw.startsWith('5')) type = 'MasterCard';
+    else if (raw.startsWith('9860')) type = 'Uzcard';
+    else if (raw.startsWith('8600')) type = 'Humo';
+    cardTypeInfo.textContent = `Karta turi: ${type}`;
+  }
 }
 
 function fmtExp(el) {
@@ -589,20 +629,33 @@ function fmtExp(el) {
 }
 
 async function submitOrder() {
+  const passSeries = (document.getElementById('passportSeries')?.value || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2);
+  const passNumber = (document.getElementById('passportNumber')?.value || '').replace(/\D/g, '').slice(0, 7);
+  const passPinfl = (document.getElementById('passportPinfl')?.value || '').replace(/\D/g, '').slice(0, 14);
+  const passOk = /^[A-Z]{2}$/.test(passSeries) && /^\d{7}$/.test(passNumber) && /^\d{14}$/.test(passPinfl);
+  const pInfo = document.getElementById('passportInfo');
+  if (pInfo) pInfo.textContent = passOk ? '✅ 16 yan tasdiqlandi' : '❌ Passport ma`lumotlarini tekshiring';
+
   const data = {
     first_name: document.getElementById('oNm')?.value.trim(),
     last_name: document.getElementById('oSn')?.value.trim(),
-    phone: document.getElementById('oPh')?.value.trim(),
+    phone: (document.getElementById('oPh')?.value || '').replace(/\D/g, ''),
     email: document.getElementById('oEm')?.value.trim(),
     region: document.getElementById('oReg')?.value,
     district: document.getElementById('oDistrict')?.value || '',
     mahalla: document.getElementById('oMahalla')?.value || '',
     house: document.getElementById('oHouse')?.value || '',
     payment_method: selPayMethod,
+    card_number: (document.getElementById('cnum')?.value || '').replace(/\D/g, ''),
+    passport_series: passSeries,
+    passport_number: passNumber,
+    passport_pinfl: passPinfl,
     promo_code: appliedPromo,
     items: CART
   };
   if (!data.first_name || !data.phone || !data.region) return showToast('⚠️', "Barcha maydonlarni to'ldiring");
+  if (!/^\d{7,15}$/.test(data.phone)) return showToast('⚠️', 'Telefon faqat raqam bo`lsin');
+  if (!passOk) return showToast('⚠️', 'Passport/JSHSHIR noto`g`ri');
   const r = await api('/orders/api/create/', { method: 'POST', body: JSON.stringify(data) });
   if (r.ok && r.data.ok) {
     closeOrder();
@@ -613,6 +666,16 @@ async function submitOrder() {
   } else {
     showToast('❌', r.data.error || 'Buyurtma xatosi');
   }
+}
+
+function fillAllLimits() {
+  if (CART.length === 0) return showToast('⚠️', "Savat bo'sh");
+  if (!confirm("Hamma mahsulotlarni 15 taga to'ldiramizmi?")) return;
+  if (!confirm("Shaxsingizni tasdiqlang")) return;
+  CART = CART.map(i => ({ ...i, qty: 15 }));
+  saveCart();
+  renderProducts();
+  showToast('✅', 'Barcha limitlar 15 ga to`ldirildi');
 }
 
 function closeSucc() { document.getElementById('succ')?.classList.remove('open'); }

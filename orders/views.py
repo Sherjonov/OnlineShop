@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -10,11 +11,44 @@ from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.http import require_http_methods, require_POST
 
 from products.models import Product
-from .models import Order, OrderItem
+from .models import Order, OrderItem, PaymentVerification
 from . import services
 
 
 # ============ JSON API Endpoints ============
+def _digits(value: str) -> str:
+    return "".join(ch for ch in str(value or "") if ch.isdigit())
+
+
+def _detect_card_type(number: str) -> str:
+    if number.startswith("4700") or number.startswith("4"):
+        return "Visa"
+    if number.startswith("5"):
+        return "MasterCard"
+    if number.startswith("9860"):
+        return "Uzcard"
+    if number.startswith("8600"):
+        return "Humo"
+    return "Unknown"
+
+
+def _luhn_valid(number: str) -> bool:
+    if len(number) != 16 or not number.isdigit():
+        return False
+    total = 0
+    for idx, ch in enumerate(number):
+        n = int(ch)
+        if idx % 2 == 0:
+            n *= 2
+            if n > 9:
+                n -= 9
+        total += n
+    return total % 10 == 0
+
+
+def _passport_valid(series: str, number: str, pinfl: str) -> bool:
+    return bool(re.fullmatch(r"[A-Z]{2}", series)) and bool(re.fullmatch(r"\d{7}", number)) and bool(re.fullmatch(r"\d{14}", pinfl))
+
 
 @require_POST
 def api_create_order(request):
@@ -32,6 +66,11 @@ def api_create_order(request):
     district = data.get('district', '').strip()
     mahalla = data.get('mahalla', '').strip()
     house = data.get('house', '').strip()
+    payment_method = (data.get('payment_method') or 'cash').strip().lower()
+    card_number = _digits(data.get('card_number', ''))
+    passport_series = (data.get('passport_series') or '').strip().upper()
+    passport_number = _digits(data.get('passport_number', ''))
+    passport_pinfl = _digits(data.get('passport_pinfl', ''))
     items = data.get('items', [])
     
     if not first_name or not phone or not region:
@@ -84,11 +123,34 @@ def api_create_order(request):
     # Create order items
     for item_data in order_items:
         OrderItem.objects.create(order=order, **item_data)
+
+    card_type = _detect_card_type(card_number)
+    card_valid = True
+    if payment_method == "card":
+        card_valid = _luhn_valid(card_number)
+        if not card_valid:
+            return JsonResponse({'ok': False, 'error': 'Karta raqami noto\'g\'ri'}, status=400)
+
+    passport_valid = _passport_valid(passport_series, passport_number, passport_pinfl)
+    PaymentVerification.objects.create(
+        order=order,
+        payment_method=payment_method if payment_method in {"card", "cash", "click", "payme"} else "cash",
+        card_type=card_type,
+        card_last4=card_number[-4:] if card_number else "",
+        card_valid=card_valid,
+        passport_series=passport_series,
+        passport_number=passport_number,
+        passport_pinfl=passport_pinfl,
+        passport_valid=passport_valid,
+    )
     
     return JsonResponse({
         'ok': True,
         'order_number': order.number,
         'total': total,
+        'card_type': card_type,
+        'card_valid': card_valid,
+        'passport_valid': passport_valid,
     })
 
 

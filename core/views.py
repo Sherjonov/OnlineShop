@@ -4,6 +4,7 @@ import json
 from django.db.models import Count, Q
 from django.shortcuts import render
 
+from products.models import Favorite
 from products.models import Category, Product
 
 
@@ -42,9 +43,16 @@ def home(request):
         for p in products_list
     ], ensure_ascii=False)
 
+    liked_ids = []
+    if request.user.is_authenticated:
+        liked_ids = list(
+            Favorite.objects.filter(user=request.user).values_list("product_id", flat=True)
+        )
+
     return render(request, "index.html", {
         "products": products_list,
         "products_json": products_json,
+        "liked_ids_json": json.dumps(liked_ids),
         "products_count": len(products_list),
         "categories": categories,
         "active_category": cat_slug,

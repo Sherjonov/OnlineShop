@@ -10,7 +10,7 @@ from django.views.decorators.http import require_http_methods
 
 from accounts.models import AdminNotification
 
-from .models import Category, Product
+from .models import Category, Favorite, Product
 
 
 def _is_admin(u):
@@ -98,3 +98,26 @@ def delete_product(request, product_id: int):
     product = get_object_or_404(Product, pk=product_id)
     product.delete()
     return JsonResponse({"ok": True})
+
+
+@login_required
+@require_http_methods(["POST"])
+def toggle_favorite(request, product_id: int):
+    product = get_object_or_404(Product, pk=product_id, is_active=True)
+    favorite, created = Favorite.objects.get_or_create(user=request.user, product=product)
+    if not created:
+        favorite.delete()
+    return JsonResponse({"ok": True, "liked": created, "product_id": product_id})
+
+
+@login_required
+def list_favorites(request):
+    liked_ids = set(
+        Favorite.objects.filter(user=request.user).values_list("product_id", flat=True)
+    )
+    products = Product.objects.filter(pk__in=liked_ids, is_active=True).select_related("category")
+    return JsonResponse({
+        "ok": True,
+        "products": [p.to_dict() for p in products],
+        "liked_ids": list(liked_ids),
+    })

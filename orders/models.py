@@ -77,3 +77,35 @@ class OrderItem(models.Model):
     def save(self, *args, **kwargs):
         self.line_total = self.unit_price * self.quantity
         super().save(*args, **kwargs)
+
+
+class PaymentVerification(models.Model):
+    CARD = "card"
+    CASH = "cash"
+    CLICK = "click"
+    PAYME = "payme"
+    METHODS = [
+        (CARD, "Karta"),
+        (CASH, "Naqd"),
+        (CLICK, "Click"),
+        (PAYME, "Payme"),
+    ]
+
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name="payment_verification")
+    payment_method = models.CharField(max_length=16, choices=METHODS, default=CASH)
+    card_type = models.CharField(max_length=32, blank=True, default="")
+    card_last4 = models.CharField(max_length=4, blank=True, default="")
+    card_valid = models.BooleanField(default=False)
+    passport_series = models.CharField(max_length=2, blank=True, default="")
+    passport_number = models.CharField(max_length=7, blank=True, default="")
+    passport_pinfl = models.CharField(max_length=14, blank=True, default="")
+    passport_valid = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = "To'lov tekshiruvi"
+        verbose_name_plural = "To'lov tekshiruvlari"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.order.number} - {self.payment_method}"

@@ -1,6 +1,7 @@
 """Mahsulot modellari (sodda)."""
 from __future__ import annotations
 
+from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
 
@@ -87,3 +88,28 @@ class Product(models.Model):
             "stock": self.stock,
             "image": self.image_url,
         }
+
+
+class Favorite(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="favorites",
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="favorited_by",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = "Yoqtirilgan mahsulot"
+        verbose_name_plural = "Yoqtirilgan mahsulotlar"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["user", "product"], name="uniq_user_product_favorite"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user_id}:{self.product_id}"

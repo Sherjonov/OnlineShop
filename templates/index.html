@@ -133,6 +133,7 @@
         <button class="tab" onclick="switchTab('drinks',null)" id="t-dr">🥤 Ichimliklar <span class="cnt" id="c-dr">0</span></button>
         <button class="tab" onclick="switchTab('milliy',null)" id="t-mi">🍲 Milliy <span class="cnt" id="c-mi">0</span></button>
         <button class="tab" onclick="switchTab('shirinliklar',null)" id="t-sh">🍰 Shirinliklar <span class="cnt" id="c-sh">0</span></button>
+        <button class="tab" onclick="switchTab('favorites',null)" id="t-fv">❤️ Yoqtirganlarim <span class="cnt" id="c-fv">0</span></button>
         <button class="tab" onclick="switchTab('all',null)" id="t-al">⚡ Barchasi <span class="cnt" id="c-al">0</span></button>
       </div>
     </div>
@@ -337,6 +338,7 @@
     <div style="display:flex;justify-content:space-between;margin-bottom:13px;display:none" id="discountRow">
       <span style="color:var(--green)">Chegirma (20%):</span><span id="discountAmt" style="font-family:'JetBrains Mono',monospace;color:var(--green);font-weight:700"></span>
     </div>
+    <button class="promo-btn" style="width:100%;margin-bottom:10px" onclick="fillAllLimits()">Limitni to'ldirish</button>
     <button class="ckbtn" onclick="openOrder()">🛒 <span data-tr="order_now">BUYURTMA BERISH</span></button>
   </div>
 </div>
@@ -362,7 +364,8 @@
           <div class="fg"><label class="fl">Familiya</label><input class="fi" id="rs" placeholder="Familiya"></div>
         </div>
         <div class="fg"><label class="fl">Username</label><input class="fi" id="ru" placeholder="username"></div>
-        <div class="fg"><label class="fl">Email</label><input class="fi" type="email" id="re" placeholder="email@example.com"></div>
+        <div class="fg"><label class="fl">Email</label><input class="fi" type="email" id="re" value="sherjonovabduaziz@example.com" placeholder="email@example.com"></div>
+        <div class="fg"><label class="fl">Telefon</label><input class="fi" id="rph" placeholder="998901234567"></div>
         <div class="fg"><label class="fl">Parol</label><input class="fi" type="password" id="rp" placeholder="••••••••"></div>
         <button class="sbtn" onclick="doRegister()">RO'YXATDAN O'TISH</button>
         <button class="cbtn" onclick="closeAuth()">Bekor qilish</button>
@@ -464,6 +467,7 @@
           </div>
           <span class="cf-label">💳 Karta raqami</span>
           <input class="cinput" id="cnum" placeholder="0000 0000 0000 0000" maxlength="35" oninput="fmtCard(this)">
+          <div id="cardTypeInfo" style="margin-top:6px;font-size:.72rem;color:var(--t3)">Karta turi: Aniqlanmadi</div>
           <div class="crow">
             <div><span class="cf-label">📅 Muddat</span><input class="cinput" id="cexp" placeholder="MM / YY" maxlength="7" oninput="fmtExp(this)"></div>
             <div><span class="cf-label">🔒 CVV</span><input class="cinput" id="ccvv" type="password" placeholder="•••" maxlength="3"></div>
@@ -474,6 +478,15 @@
             <i class="fas fa-lock" style="color:var(--green);font-size:.78rem"></i>
             <span style="font-size:.7rem;color:var(--green)">256-bit SSL shifrlash bilan himoyalangan</span>
           </div>
+        </div>
+        <div style="margin-top:10px">
+          <span class="cf-label">🛂 Passport seriya</span>
+          <input class="cinput" id="passportSeries" placeholder="AA" maxlength="2">
+          <span class="cf-label">🆔 Passport raqami</span>
+          <input class="cinput" id="passportNumber" placeholder="1234567" maxlength="7">
+          <span class="cf-label">🔢 JSHSHIR (14)</span>
+          <input class="cinput" id="passportPinfl" placeholder="12345678901234" maxlength="14">
+          <div id="passportInfo" style="margin-top:6px;font-size:.72rem;color:var(--t3)">Passport tekshiruvi kutilmoqda</div>
         </div>
         <div class="opinfo" id="opinfo" style="display:none"><i class="fas fa-info-circle"></i><span id="opitxt"></span></div>
       </div>
@@ -497,9 +510,12 @@
 <button class="floatc" id="floatc" onclick="openCart()" aria-label="Savatni ochish"><i class="fas fa-shopping-basket"></i><span class="fbadge" id="fbadge">0</span></button>
 
 {{ products_json|json_script:"products-data" }}
+{{ liked_ids_json|json_script:"liked-ids-data" }}
 <script>
   try { window.__PRODUCTS__ = JSON.parse(document.getElementById('products-data').textContent || '[]'); }
   catch(e) { window.__PRODUCTS__ = []; }
+  try { window.__LIKED_IDS__ = JSON.parse(document.getElementById('liked-ids-data').textContent || '[]'); }
+  catch(e) { window.__LIKED_IDS__ = []; }
 </script>
 <script src="{% static 'js/app.js' %}"></script>
 </body>

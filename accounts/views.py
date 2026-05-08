@@ -1,6 +1,7 @@
 """Accounts views with JSON API endpoints."""
 import json
 import random
+import re
 
 from django.contrib import messages
 from django.contrib.auth import (
@@ -99,10 +100,13 @@ def api_register(request):
     last_name = data.get('last_name', '').strip()
     username = data.get('username', '').strip()
     email = data.get('email', '').strip()
+    phone = data.get('phone', '').strip()
     password = data.get('password', '')
     
     if not first_name or not username or not email or not password:
         return JsonResponse({'ok': False, 'error': 'Barcha maydonlar kerak'}, status=400)
+    if phone and not re.fullmatch(r"\d{7,15}", phone):
+        return JsonResponse({'ok': False, 'error': 'Telefon faqat raqamlardan iborat bo\'lsin'}, status=400)
     
     if User.objects.filter(username=username).exists():
         return JsonResponse({'ok': False, 'error': 'Bu username band'}, status=400)
@@ -118,6 +122,7 @@ def api_register(request):
         'first_name': first_name,
         'last_name': last_name,
         'username': username,
+        'phone': phone,
         'password': password,
         'created_at': timezone.now().isoformat(),
     }
@@ -162,6 +167,7 @@ def api_verify_otp(request):
             password=otp_data['password'],
             first_name=otp_data['first_name'],
             last_name=otp_data.get('last_name', ''),
+            phone=otp_data.get('phone', ''),
             is_email_verified=True,
         )
         auth_login(request, user, backend='accounts.backends.UsernameOrEmailBackend')
