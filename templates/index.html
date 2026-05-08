@@ -1,0 +1,506 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uz" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>QUVVAT.MARKET — Premium Food & Drinks</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+{% csrf_token %}
+
+<div id="intro">
+  <div class="il" id="il">QUVVAT<em>.</em>MARKET</div>
+  <div class="is" id="is">Ichimliklar &amp; FastFood</div>
+  <div class="ib" id="ib"><div class="ibf" id="ibf"></div></div>
+</div>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<button class="sb-toggle" id="sbToggle" onclick="toggleSidebar()" aria-label="Menyu"><i class="fas fa-bars"></i></button>
+
+<aside class="sidebar collapsed" id="sidebar">
+  <div class="sb-logo">
+    <div class="lm">⚡</div>
+    <div class="ln">QUVVAT<em>.</em>MARKET</div>
+  </div>
+  <nav class="sb-nav" id="sbnav">
+    <button class="si active" onclick="showMain()"><i class="fas fa-home"></i><span class="si-label">Asosiy</span></button>
+    {% if user.is_authenticated %}
+      <button class="si" onclick="showPanel('table')"><i class="fas fa-table"></i><span class="si-label">Buyurtmalar</span></button>
+    {% endif %}
+    {% if user.is_staff %}
+      <button class="si" id="si-activity" onclick="showPanel('activity')"><i class="fas fa-users"></i><span class="si-label">Kirish/Chiqish</span></button>
+      <button class="si" id="si-settings" onclick="showPanel('settings')"><i class="fas fa-cog"></i><span class="si-label">Sozlamalar</span></button>
+      <button class="si" id="si-addprod" onclick="showPanel('addprod')"><i class="fas fa-plus-circle"></i><span class="si-label">Mahsulotlar</span></button>
+    {% endif %}
+  </nav>
+  <div class="sb-foot">
+    <div class="sb-user">
+      <div class="sb-av" id="sbav">{% if user.is_authenticated %}{{ user.first_name|first|default:user.username|first }}{% else %}👤{% endif %}</div>
+      <div class="sb-user-info">
+        <div class="sb-nm" id="sbnm">{% if user.is_authenticated %}{{ user.get_full_name|default:user.username }}{% else %}Mehmon{% endif %}</div>
+        <div class="sb-rl" id="sbrl">{% if user.is_staff %}Admin{% elif user.is_authenticated %}Foydalanuvchi{% else %}Guest{% endif %}</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<main class="main" id="main">
+  <header class="hdr" id="mainHdr">
+    <div class="hdr-inner">
+      <a href="/" class="logo">
+        <div class="lm">⚡</div>
+        <div>
+          <div class="ln">QUVVAT<em>.</em>MARKET</div>
+          <div class="ls">Premium Food &amp; Drinks</div>
+        </div>
+      </a>
+      <nav class="hnav" id="mainNav">
+        <a href="#features" class="nl" data-tr="nav_features">Afzalliklar</a>
+        <a href="#contact" class="nl" data-tr="nav_contact">Aloqa</a>
+      </nav>
+      <div class="hact">
+        <div class="lang-sw">
+          <button class="lb active" onclick="setLang('uz')">UZ</button>
+          <button class="lb" onclick="setLang('ru')">RU</button>
+          <button class="lb" onclick="setLang('en')">EN</button>
+        </div>
+        <button class="theme-btn" onclick="toggleTheme()" id="themeBtn" aria-label="Tema">🌙</button>
+        <div class="swp">
+          <input class="sinput" type="text" id="srch" placeholder="Qidirish..." oninput="doSearch(this.value)" onblur="setTimeout(()=>document.getElementById('sres').classList.remove('open'),200)" aria-label="Qidirish">
+          <div class="sres" id="sres"></div>
+        </div>
+        <button class="ibtn" onclick="openCart()" aria-label="Savat"><i class="fas fa-shopping-basket"></i><span class="bge" id="hbadge">0</span></button>
+        {% if user.is_authenticated %}
+          <div id="userArea">
+            <div class="umw">
+              <button class="uav" onclick="toggleUD()" id="uavbtn">{{ user.first_name|first|default:user.username|first }}</button>
+              <div class="udrop" id="udrop">
+                <div class="udh">
+                  <div class="udn" id="udn">{{ user.get_full_name|default:user.username }}</div>
+                  <div class="ude" id="ude">{{ user.email }}</div>
+                </div>
+                <button class="udi" onclick="logout()"><i class="fas fa-sign-out-alt"></i><span data-tr="logout">Chiqish</span></button>
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <div id="authArea"><button class="ctabtn" onclick="openAuth()"><i class="fas fa-user"></i> <span data-tr="login">Kirish</span></button></div>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <div id="msc" class="msc">
+    <section class="hero" id="top">
+      <div>
+        <div class="hpill"><i class="fas fa-circle" style="font-size:.45rem;animation:lp 1.5s infinite"></i><span data-tr="pill_delivery">Tezkor yetkazish — 30 daqiqa</span></div>
+        <h1 class="htit">
+          <span class="t1" data-tr="h_t1">MAZALI VA</span>
+          <span class="t2" data-tr="h_t2">SIFATLI</span>
+          <span class="t1" data-tr="h_t3">OVQATLAR</span>
+        </h1>
+        <p class="hdes" data-tr="h_des">Eng sara ichimliklar va fastfood mahsulotlari bir joyda. {{ products_count|default:"43" }}+ mahsulot, tezkor yetkazib berish, premium xizmat.</p>
+        <div class="hbtns">
+          <button class="btnp" onclick="switchTab('all',null);document.querySelector('.tabs-wrap').scrollIntoView({behavior:'smooth'})"><i class="fas fa-fire"></i><span data-tr="h_order">Hozir buyurtma ber</span></button>
+          <button class="btng" onclick="openCart()"><i class="fas fa-shopping-basket"></i><span data-tr="h_view_cart">Savatni ko'r</span></button>
+        </div>
+        <div class="hstats">
+          <div class="hst"><span class="hst-n">{{ products_count|default:"43" }}+</span><span class="hst-l">Mahsulot</span></div>
+          <div class="hst"><span class="hst-n">30'</span><span class="hst-l">Yetkazish</span></div>
+          <div class="hst"><span class="hst-n">24/7</span><span class="hst-l">Xizmat</span></div>
+          <div class="hst"><span class="hst-n">5★</span><span class="hst-l">Sifat</span></div>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="hcard">
+          <div class="hct">🔥 Eng ko'p buyurilganlar</div>
+          <div class="fil" id="featList"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="tabs-wrap">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('fastfood',null)" id="t-ff">🍔 FastFood <span class="cnt" id="c-ff">0</span></button>
+        <button class="tab" onclick="switchTab('drinks',null)" id="t-dr">🥤 Ichimliklar <span class="cnt" id="c-dr">0</span></button>
+        <button class="tab" onclick="switchTab('milliy',null)" id="t-mi">🍲 Milliy <span class="cnt" id="c-mi">0</span></button>
+        <button class="tab" onclick="switchTab('shirinliklar',null)" id="t-sh">🍰 Shirinliklar <span class="cnt" id="c-sh">0</span></button>
+        <button class="tab" onclick="switchTab('all',null)" id="t-al">⚡ Barchasi <span class="cnt" id="c-al">0</span></button>
+      </div>
+    </div>
+
+    <section class="section">
+      <div class="sechead">
+        <div class="seclbl">
+          <div class="secico" id="secico">🍔</div>
+          <div class="sectt">
+            <h2 id="sectit">FastFood</h2>
+            <p id="secsub">Eng mazali tez taomlar</p>
+          </div>
+        </div>
+        <span class="seccnt" id="seccnt">0 ta mahsulot</span>
+      </div>
+      <div class="pgrid" id="pgrid"></div>
+    </section>
+
+    <section class="feats" id="features">
+      <div class="feats-inner">
+        <div style="text-align:center">
+          <div class="hpill" style="margin-bottom:14px">✨ Nega biz?</div>
+          <h2 style="font-family:'Syne',sans-serif;font-size:clamp(1.4rem,3vw,2rem);font-weight:800;letter-spacing:-1px">Bizning Afzalliklarimiz</h2>
+          <p style="color:var(--t3);margin-top:7px;font-size:.88rem">Premium xizmat, tez yetkazish, kafolat</p>
+        </div>
+        <div class="fgrid">
+          <div class="fcard">
+            <div class="fic">⚡</div>
+            <div class="ftt">Tez Yetkazish</div>
+            <div class="fds">Toshkent bo'yicha 30 daqiqa, viloyatlarga 2 soat ichida yetkazib beramiz.</div>
+          </div>
+          <div class="fcard">
+            <div class="fic" style="background:var(--cdim);border-color:rgba(0,212,255,.2)">🧊</div>
+            <div class="ftt">Sovuq Zanjir</div>
+            <div class="fds">Barcha ichimliklar maxsus sovitkichda saqlanadi va yetkaziladi.</div>
+          </div>
+          <div class="fcard">
+            <div class="fic" style="background:var(--gdim);border-color:rgba(0,230,118,.2)">🌿</div>
+            <div class="ftt">Tabiiy Ingrediyentlar</div>
+            <div class="fds">100% tabiiy, sun'iy bo'yoqsiz va konservantlarsiz mahsulotlar.</div>
+          </div>
+          <div class="fcard">
+            <div class="fic" style="background:rgba(255,214,0,.1);border-color:rgba(255,214,0,.2)">🏆</div>
+            <div class="ftt">Kafolatlangan Sifat</div>
+            <div class="fds">Har bir mahsulot sifat nazoratidan o'tadi. 100% qoniqish kafolati.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="contact-sec" id="contact">
+      <div class="contact-inner">
+        <div style="text-align:center">
+          <div class="hpill" style="margin-bottom:14px">📍 Aloqa</div>
+          <h2 style="font-family:'Syne',sans-serif;font-size:clamp(1.4rem,3vw,2rem);font-weight:800;letter-spacing:-1px">Biz bilan bog'laning</h2>
+          <p style="color:var(--t3);margin-top:7px;font-size:.88rem">Savollaringiz bo'lsa, istalgan vaqt murojaat qiling</p>
+        </div>
+        <div class="cgrid">
+          <div>
+            <div class="cinfo">
+              <div class="ccard">
+                <div class="ccico">📞</div>
+                <div>
+                  <div class="cclbl">Telefon</div>
+                  <div class="ccval">+998 91 860 88 20</div>
+                  <div class="ccsub">24/7 ishlaydi</div>
+                </div>
+              </div>
+              <div class="ccard">
+                <div class="ccico" style="background:var(--cdim);border-color:rgba(0,212,255,.2)">✉️</div>
+                <div>
+                  <div class="cclbl">Email</div>
+                  <div class="ccval">info@quvvat.market</div>
+                  <div class="ccsub">24 soat ichida javob</div>
+                </div>
+              </div>
+              <div class="ccard">
+                <div class="ccico" style="background:var(--gdim);border-color:rgba(0,230,118,.2)">📍</div>
+                <div>
+                  <div class="cclbl">Manzil</div>
+                  <div class="ccval">Xorazm viloyati, Xiva</div>
+                  <div class="ccsub">Asosiy ofis manzili</div>
+                </div>
+              </div>
+              <div class="ccard">
+                <div class="ccico" style="background:rgba(255,140,0,.12);border-color:rgba(255,140,0,.2)">🚚</div>
+                <div>
+                  <div class="cclbl">Yetkazib berish</div>
+                  <div class="ccval">12 viloyat bo'ylab</div>
+                  <div class="ccsub">Butun O'zbekiston</div>
+                </div>
+              </div>
+            </div>
+            <div class="wh" style="margin-top:18px">
+              <div class="whtit">⏰ Ish vaqti</div>
+              <div class="whr"><span class="whd">Dushanba – Juma</span><span class="wht">08:00 – 23:00</span></div>
+              <div class="whr"><span class="whd">Shanba</span><span class="wht">09:00 – 22:00</span></div>
+              <div class="whr"><span class="whd">Yakshanba</span><span class="wht">10:00 – 21:00</span></div>
+              <div class="whr"><span class="whd">Buyurtma qabul</span><span class="wht">24/7</span></div>
+            </div>
+          </div>
+          <div class="cform">
+            <h3>💬 Xabar yuborish</h3>
+            <div class="fg"><label class="fl">👤 Ism</label><input class="fi" id="cfn" placeholder="Ismingiz"></div>
+            <div class="fg"><label class="fl">📱 Telefon</label><input class="fi" id="cfp" placeholder="+998 91 860 88 20"></div>
+            <div class="fg"><label class="fl">📧 Email</label><input class="fi" id="cfe" type="email" placeholder="email@example.com"></div>
+            <div class="fg"><label class="fl">💬 Xabar</label><textarea class="fi" style="min-height:100px" id="cfm"></textarea></div>
+            <button class="cfsend" onclick="sendContact()"><i class="fas fa-paper-plane"></i> XABAR YUBORISH</button>
+            <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--b)">
+              <div style="font-size:.68rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--t3);margin-bottom:11px">Ijtimoiy tarmoqlar</div>
+              <div style="display:flex;gap:9px;flex-wrap:wrap">
+                <a href="https://t.me/Sherjonov_011" target="_blank" class="soc-btn"><i class="fab fa-telegram"></i> @Sherjonov_011</a>
+                <a href="https://instagram.com/sherjonov.011" target="_blank" class="soc-btn"><i class="fab fa-instagram"></i> sherjonov.011</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="ftop">
+        <div class="fbrand">
+          <div style="display:flex;align-items:center;gap:11px;margin-bottom:16px">
+            <div style="width:40px;height:40px;background:linear-gradient(135deg,var(--red),var(--orange));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">⚡</div>
+            <div>
+              <div class="fb-nm">QUVVAT<em>.</em>MARKET</div>
+              <div style="font-size:.62rem;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase">Premium Food &amp; Drinks</div>
+            </div>
+          </div>
+          <p>O'zbekistonning eng yaxshi onlayn oziq-ovqat do'koni. Premium mahsulotlar, tezkor yetkazish va 24/7 xizmat.</p>
+          <div class="fbsocs">
+            <a href="https://t.me/Sherjonov_011" target="_blank" class="soc-btn"><i class="fab fa-telegram"></i></a>
+            <a href="https://instagram.com/sherjonov.011" target="_blank" class="soc-btn"><i class="fab fa-instagram"></i></a>
+          </div>
+        </div>
+        <div class="fcol">
+          <h4>Mahsulotlar</h4>
+          <ul>
+            <li><a href="#"><i class="fas fa-chevron-right"></i>FastFood</a></li>
+            <li><a href="#"><i class="fas fa-chevron-right"></i>Ichimliklar</a></li>
+            <li><a href="#"><i class="fas fa-chevron-right"></i>Milliy taomlar</a></li>
+            <li><a href="#"><i class="fas fa-chevron-right"></i>Shirinliklar</a></li>
+          </ul>
+        </div>
+        <div class="fcol">
+          <h4>Yetkazish</h4>
+          <ul>
+            <li><a href="#"><i class="fas fa-chevron-right"></i>Toshkent</a></li>
+            <li><a href="#"><i class="fas fa-chevron-right"></i>Samarqand</a></li>
+            <li><a href="#"><i class="fas fa-chevron-right"></i>Xorazm</a></li>
+            <li><a href="#"><i class="fas fa-chevron-right"></i>Buxoro</a></li>
+          </ul>
+        </div>
+        <div class="fcol">
+          <h4>Aloqa</h4>
+          <ul>
+            <li><a href="tel:+998918608820"><i class="fas fa-phone"></i>+998 91 860 88 20</a></li>
+            <li><a href="mailto:info@quvvat.market"><i class="fas fa-envelope"></i>Email</a></li>
+            <li><a href="#"><i class="fas fa-map-marker-alt"></i>Xorazm, Xiva</a></li>
+            <li><a href="#"><i class="fas fa-clock"></i>24/7 Ochiq</a></li>
+          </ul>
+        </div>
+        <div class="fnl">
+          <h4>Yangiliklar</h4>
+          <p>Chegirmalar va yangi mahsulotlardan birinchi xabardor bo'ling!</p>
+          <input type="email" class="nl-inp" placeholder="Email manzilingiz">
+          <button class="nl-btn" onclick="showToast('OK','Obunaga qoshildingiz')">Obuna bo'lish</button>
+        </div>
+      </div>
+      <div class="fawds">
+        <div class="awd"><i class="fas fa-medal"></i>#1 Food Delivery 2026</div>
+        <div class="awd"><i class="fas fa-users"></i>1000+ Mijozlar</div>
+        <div class="awd"><i class="fas fa-box"></i>5000+ Yetkazilgan</div>
+        <div class="awd"><i class="fas fa-shield-alt"></i>SSL Himoya</div>
+        <div class="awd"><i class="fas fa-truck"></i>12 Viloyat</div>
+      </div>
+      <hr class="fdiv">
+      <div class="fbot">
+        <div class="fbc">© 2026 <strong>QUVVAT.MARKET</strong> — Barcha huquqlar himoyalangan</div>
+        <div class="fbls"><a href="#">Maxfiylik</a><a href="#">Shartlar</a><a href="#">Cookie</a></div>
+        <div style="font-size:.75rem;color:var(--t3);display:flex;align-items:center;gap:5px"><i class="fas fa-heart" style="color:var(--red)"></i>Made in Uzbekistan</div>
+      </div>
+    </footer>
+  </div>
+</main>
+
+<div class="cart-ov" id="cartOv" onclick="closeCart()"></div>
+<div class="cart-sb" id="cartSb">
+  <div class="cart-hd">
+    <h3>🛒 <span data-tr="cart">Savat</span></h3>
+    <button onclick="closeCart()" style="background:none;border:none;color:var(--t2);font-size:1.2rem;cursor:pointer;padding:4px" aria-label="Yopish">✕</button>
+  </div>
+  <div class="cart-bd" id="cartBd"></div>
+  <div class="cart-ft" id="cartFt" style="display:none">
+    <div class="promo-row">
+      <input class="promo-input" id="promoInp" placeholder="Promo kod...">
+      <button class="promo-btn" onclick="applyPromo()">Qo'llash</button>
+    </div>
+    <div class="promo-ok" id="promoOk" style="display:none"><i class="fas fa-tag"></i><span id="promoOkTxt"></span></div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:7px"><span data-tr="total">Jami:</span><span id="cartTot" style="font-family:'JetBrains Mono',monospace;color:var(--orange);font-weight:700">0</span></div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:13px;display:none" id="discountRow">
+      <span style="color:var(--green)">Chegirma (20%):</span><span id="discountAmt" style="font-family:'JetBrains Mono',monospace;color:var(--green);font-weight:700"></span>
+    </div>
+    <button class="ckbtn" onclick="openOrder()">🛒 <span data-tr="order_now">BUYURTMA BERISH</span></button>
+  </div>
+</div>
+
+<div class="mwrap" id="authModal">
+  <div class="mbox">
+    <div class="mtop"><div class="mtit">KIRISH</div></div>
+    <div class="mbody">
+      <div class="atabs">
+        <button class="atab active" id="atab-login" onclick="switchAuth('login')">Kirish</button>
+        <button class="atab" id="atab-reg" onclick="switchAuth('reg')">Yangi akkaunt</button>
+        <button class="atab" id="atab-admin" onclick="switchAuth('admin')">Admin</button>
+      </div>
+      <div id="as-login">
+        <div class="fg"><label class="fl">Username</label><input class="fi" id="lu" placeholder="username"></div>
+        <div class="fg"><label class="fl">Parol</label><input class="fi" type="password" id="lp" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+        <button class="sbtn" onclick="doLogin()">KIRISH</button>
+        <button class="cbtn" onclick="closeAuth()">Bekor qilish</button>
+      </div>
+      <div id="as-reg" style="display:none">
+        <div class="fg-2">
+          <div class="fg"><label class="fl">Ism</label><input class="fi" id="rn" placeholder="Ism"></div>
+          <div class="fg"><label class="fl">Familiya</label><input class="fi" id="rs" placeholder="Familiya"></div>
+        </div>
+        <div class="fg"><label class="fl">Username</label><input class="fi" id="ru" placeholder="username"></div>
+        <div class="fg"><label class="fl">Email</label><input class="fi" type="email" id="re" placeholder="email@example.com"></div>
+        <div class="fg"><label class="fl">Parol</label><input class="fi" type="password" id="rp" placeholder="••••••••"></div>
+        <button class="sbtn" onclick="doRegister()">RO'YXATDAN O'TISH</button>
+        <button class="cbtn" onclick="closeAuth()">Bekor qilish</button>
+        <div id="regOtpStep" style="display:none;margin-top:14px">
+          <p style="color:var(--t3);font-size:.82rem;margin-bottom:11px;text-align:center">📬 Emailingizga 6 xonali kod yuborildi</p>
+          <div class="otp-wrap" id="regOtpWrap"></div>
+          <button class="sbtn" onclick="confirmReg()">TASDIQLASH</button>
+        </div>
+      </div>
+      <div id="as-admin" style="display:none">
+        <div class="fg"><label class="fl">Admin Username</label><input class="fi" id="au" placeholder="admin username"></div>
+        <div class="fg"><label class="fl">Admin Parol</label><input class="fi" type="password" id="ap" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAdmin()"></div>
+        <button class="sbtn" onclick="doAdmin()">ADMIN KIRISH</button>
+        <button class="cbtn" onclick="closeAuth()">Bekor qilish</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mwrap" id="orderModal">
+  <div class="mbox ombox">
+    <div class="mtop" style="padding-bottom:14px">
+      <div class="mtit">BUYURTMA BERISH</div>
+      <p style="color:var(--t3);font-size:.8rem;margin-top:5px">Barcha maydonlarni to'ldiring</p>
+    </div>
+    <div class="mbody" style="padding-top:0">
+      <div class="ostep">
+        <div class="ostit"><span>1</span>BUYURTMA TARKIBI</div>
+        <div class="recap" id="oRecap"></div>
+      </div>
+      <div class="ostep">
+        <div class="ostit"><span>2</span>SHAXSIY MA'LUMOTLAR</div>
+        <div class="fg-2">
+          <div class="fg" style="margin-bottom:0"><label class="fl">👤 Ism</label><input class="fi" id="oNm" placeholder="Ismingiz"></div>
+          <div class="fg" style="margin-bottom:0"><label class="fl">👤 Familiya</label><input class="fi" id="oSn" placeholder="Familiyangiz"></div>
+        </div>
+        <div class="fg" style="margin-top:11px;margin-bottom:0"><label class="fl">📱 Telefon</label><input class="fi" id="oPh" placeholder="+998 91 860 88 20"></div>
+        <div class="fg" style="margin-top:11px;margin-bottom:0"><label class="fl">📧 Email</label><input class="fi" type="email" id="oEm" placeholder="email@example.com"></div>
+      </div>
+      <div class="ostep">
+        <div class="ostit"><span>3</span>YETKAZIB BERISH</div>
+        <label class="fl">🗺️ Viloyatni tanlang</label>
+        <select class="rsel" id="oReg" onchange="updateDistricts()">
+          <option value="">— Viloyatni tanlang —</option>
+          <option value="Toshkent shahar">Toshkent shahar</option>
+          <option value="Toshkent viloyati">Toshkent viloyati</option>
+          <option value="Samarqand viloyati">Samarqand viloyati</option>
+          <option value="Buxoro viloyati">Buxoro viloyati</option>
+          <option value="Andijon viloyati">Andijon viloyati</option>
+          <option value="Farg'ona viloyati">Farg'ona viloyati</option>
+          <option value="Namangan viloyati">Namangan viloyati</option>
+          <option value="Qashqadaryo viloyati">Qashqadaryo viloyati</option>
+          <option value="Surxondaryo viloyati">Surxondaryo viloyati</option>
+          <option value="Xorazm viloyati">Xorazm viloyati</option>
+          <option value="Navoiy viloyati">Navoiy viloyati</option>
+          <option value="Qoraqalpog'iston">Qoraqalpog'iston</option>
+        </select>
+        <div id="districtWrap" style="display:none;margin-top:11px">
+          <label class="fl">🏙️ Tuman/Shahar</label>
+          <select class="rsel" id="oDistrict" onchange="updateMahallas()">
+            <option value="">— Tuman tanlang —</option>
+          </select>
+        </div>
+        <div id="mahallaWrap" style="display:none;margin-top:11px">
+          <label class="fl">🏘️ Mahalla</label>
+          <select class="rsel" id="oMahalla">
+            <option value="">— Mahalla tanlang —</option>
+          </select>
+        </div>
+        <div id="houseWrap" style="display:none;margin-top:11px">
+          <label class="fl">🏠 Uy raqami</label>
+          <input class="fi" id="oHouse" placeholder="Uy raqamingiz (masalan: 15)">
+        </div>
+        <div class="dinfo" id="dinfo"><i class="fas fa-truck"></i><span id="dtxt">Viloyatni tanlang</span></div>
+      </div>
+      <div class="ostep">
+        <div class="ostit"><span>4</span>TO'LOV USULI</div>
+        <div class="pmethods">
+          <div class="pm sel" id="pm-cash" onclick="selPay('cash')"><i class="fas fa-money-bill-wave"></i><div><div style="font-size:.83rem;font-weight:700">Naqd pul</div><div style="font-size:.68rem;color:var(--t3)">Eshikda to'lov</div></div></div>
+          <div class="pm" id="pm-click" onclick="selPay('click')"><i class="fas fa-mobile-alt"></i><div><div style="font-size:.83rem;font-weight:700">Click</div><div style="font-size:.68rem;color:var(--t3)">Mobil to'lov</div></div></div>
+          <div class="pm" id="pm-payme" onclick="selPay('payme')"><i class="fas fa-wallet"></i><div><div style="font-size:.83rem;font-weight:700">Payme</div><div style="font-size:.68rem;color:var(--t3)">Payme hamyon</div></div></div>
+          <div class="pm" id="pm-card" onclick="selPay('card')"><i class="fas fa-credit-card"></i><div><div style="font-size:.83rem;font-weight:700">Bank kartasi</div><div style="font-size:.68rem;color:var(--t3)">Visa / Mastercard</div></div></div>
+        </div>
+        <div class="cfields" id="cfields">
+          <div class="card-visual">
+            <div class="cv-chip"></div>
+            <div class="cv-num" id="cvNum">•••• •••• •••• ••••</div>
+            <div class="cv-row">
+              <div><div style="font-size:.6rem;color:rgba(255,255,255,.5);letter-spacing:1px;margin-bottom:2px">KARTA EGASI</div><div class="cv-name" id="cvName">FULL NAME</div></div>
+              <div><div style="font-size:.6rem;color:rgba(255,255,255,.5);letter-spacing:1px;margin-bottom:2px">MUDDAT</div><div class="cv-exp" id="cvExp">MM/YY</div></div>
+            </div>
+            <div class="cv-logo"><div class="cv-circle"></div><div class="cv-circle"></div></div>
+          </div>
+          <div class="cbrands">
+            <span class="cbrand"><i class="fab fa-cc-visa"></i> VISA</span>
+            <span class="cbrand"><i class="fab fa-cc-mastercard"></i> Mastercard</span>
+            <span class="cbrand">Uzcard</span>
+            <span class="cbrand">Humo</span>
+          </div>
+          <span class="cf-label">💳 Karta raqami</span>
+          <input class="cinput" id="cnum" placeholder="0000 0000 0000 0000" maxlength="35" oninput="fmtCard(this)">
+          <div class="crow">
+            <div><span class="cf-label">📅 Muddat</span><input class="cinput" id="cexp" placeholder="MM / YY" maxlength="7" oninput="fmtExp(this)"></div>
+            <div><span class="cf-label">🔒 CVV</span><input class="cinput" id="ccvv" type="password" placeholder="•••" maxlength="3"></div>
+          </div>
+          <span class="cf-label">👤 Karta egasi</span>
+          <input class="cinput" id="cnmf" placeholder="FULL NAME" style="text-transform:uppercase;letter-spacing:2px" oninput="document.getElementById('cvName').textContent=this.value.toUpperCase()||'FULL NAME'">
+          <div style="display:flex;align-items:center;gap:7px;padding:9px;background:var(--gdim);border-radius:var(--rm);border:1px solid rgba(0,230,118,.15)">
+            <i class="fas fa-lock" style="color:var(--green);font-size:.78rem"></i>
+            <span style="font-size:.7rem;color:var(--green)">256-bit SSL shifrlash bilan himoyalangan</span>
+          </div>
+        </div>
+        <div class="opinfo" id="opinfo" style="display:none"><i class="fas fa-info-circle"></i><span id="opitxt"></span></div>
+      </div>
+      <button class="sbtn" onclick="submitOrder()" style="font-family:'Syne',sans-serif;font-size:.95rem;letter-spacing:.5px;margin-top:3px">✅ BUYURTMANI TASDIQLASH</button>
+      <button class="cbtn" onclick="closeOrder()">Bekor qilish</button>
+    </div>
+  </div>
+</div>
+
+<div class="swrap" id="succ">
+  <div class="sbox">
+    <span class="sico">🎉</span>
+    <div class="stit text-center">TASDIQLANDI!</div>
+    <div class="soid" id="soid">#QM-00000</div>
+    <div class="smsg">Buyurtmangiz qabul qilindi.<br>Kuryer tez orada bog'lanadi.<br><span class="stme" id="stme">⏱ 30 daqiqa</span></div>
+    <button class="scta" onclick="closeSucc()">⚡ DAVOM ETISH</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="tIcon">✅</span><span id="tTxt">Xabar</span></div>
+<button class="floatc" id="floatc" onclick="openCart()" aria-label="Savatni ochish"><i class="fas fa-shopping-basket"></i><span class="fbadge" id="fbadge">0</span></button>
+
+{{ products_json|json_script:"products-data" }}
+<script>
+  try { window.__PRODUCTS__ = JSON.parse(document.getElementById('products-data').textContent || '[]'); }
+  catch(e) { window.__PRODUCTS__ = []; }
+</script>
+<script src="{% static 'js/app.js' %}"></script>
+</body>
+</html>
