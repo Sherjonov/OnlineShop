@@ -12,8 +12,16 @@ from datetime import datetime, timezone
 from email.mime.text import MIMEText
 from pathlib import Path
 
-import requests
-from dotenv import load_dotenv
+try:
+    import requests
+except Exception:  # pragma: no cover
+    requests = None
+
+try:
+    from dotenv import load_dotenv
+except Exception:  # pragma: no cover
+    def load_dotenv(*_args, **_kwargs):
+        return False
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
@@ -159,6 +167,8 @@ def luhn_ok(card_number: str) -> bool:
 def verify_card_external(payload: dict) -> tuple[bool, str]:
     if not CARD_VERIFY_URL or not CARD_VERIFY_KEY:
         return luhn_ok(payload["card_number"]), "offline-check"
+    if requests is None:
+        return luhn_ok(payload["card_number"]), "offline-no-requests"
     try:
         response = requests.post(
             CARD_VERIFY_URL,
@@ -183,6 +193,8 @@ def verify_passport_external(payload: dict) -> tuple[bool, str]:
     )
     if not PASSPORT_VERIFY_URL or not PASSPORT_VERIFY_KEY:
         return offline_valid, "offline-check"
+    if requests is None:
+        return offline_valid, "offline-no-requests"
     try:
         response = requests.post(
             PASSPORT_VERIFY_URL,
